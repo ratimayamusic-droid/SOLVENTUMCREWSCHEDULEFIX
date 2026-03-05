@@ -1,0 +1,3725 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Portal Jadwal Kerja</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -50px;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: white;
+            border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        }
+
+        .header h1 { font-size: 2.8em; margin-bottom: 10px; font-weight: 700; }
+        .header p { opacity: 0.9; font-size: 1.2em; }
+
+        .search-box {
+            padding: 40px;
+            background: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .search-wrapper {
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: #999;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 22px 25px 22px 60px;
+            font-size: 18px;
+            border: 3px solid #e0e0e0;
+            border-radius: 16px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .content {
+            padding: 0 40px 40px;
+            min-height: 400px;
+        }
+
+        .welcome {
+            text-align: center;
+            color: #666;
+            padding: 80px 20px;
+        }
+
+        .welcome-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            margin: 0 auto 25px;
+        }
+
+        .schedule-card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .employee-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #f5f5f5;
+        }
+
+        .avatar {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 36px;
+            font-weight: 700;
+            margin-right: 25px;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .employee-info h2 {
+            color: #1a1a2e;
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .employee-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #666;
+            font-size: 14px;
+            background: #f8f9fa;
+            padding: 6px 14px;
+            border-radius: 20px;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .schedule-table th {
+            background: #667eea;
+            color: white;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .schedule-table td {
+            padding: 18px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .schedule-table tr:hover { background: #fafbff; }
+
+        .date-cell { font-weight: 600; color: #1a1a2e; }
+
+        .shift-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .shift-pagi { background: #fff8e1; color: #f57c00; }
+        .shift-siang { background: #e3f2fd; color: #1976d2; }
+        .shift-sore { background: #f3e5f5; color: #7b1fa2; }
+        .shift-malam { background: #e8f5e9; color: #388e3c; }
+        .shift-fullday { background: #fce4ec; color: #c2185b; }
+        .shift-midnight { background: #eceff1; color: #455a64; }
+
+        .today-row { background: #e8f5e9 !important; }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 2px solid #f5f5f5;
+        }
+
+        .stat-box { text-align: center; }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 320px;
+            margin: 35px auto 0;
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(40, 167, 69, 0.4);
+        }
+
+        .no-result {
+            text-align: center;
+            padding: 80px 20px;
+            color: #666;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 25px;
+            color: #aaa;
+            font-size: 13px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        @media (max-width: 768px) {
+            .employee-header { flex-direction: column; text-align: center; }
+            .avatar { margin: 0 0 20px 0; }
+            .stats-bar { flex-direction: column; gap: 25px; }
+            .schedule-table { font-size: 14px; }
+            .schedule-table th, .schedule-table td { padding: 12px 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Portal Jadwal Kerja</h1>
+	    <h1>    Event Solventum Conference</h1>
+            <p>Cek jadwal shift Anda dengan mudah</p>
+        </div>
+
+        <div class="search-box">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Ketik nama lengkap Anda..." autocomplete="off">
+            </div>
+        </div>
+
+        <div class="content" id="content">
+            <div class="welcome">
+                <div class="welcome-icon">👋</div>
+                <h2>Selamat Datang</h2>
+                <p>Masukkan nama Anda untuk melihat jadwal kerja</p>
+            </div>
+        </div>
+
+        <div class="footer">© Cipta Kreasi Event Sistem Jadwal Kerja<br>
+			    Development by Junsky</div>
+    </div>
+
+    <script>
+        // ============================================
+        // PASTE DATA JSON ANDA DI SINI
+        // ============================================
+        const jadwalData = [
+ {
+   "Tanggal": "Sabtu, 07 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Fullday",
+   "Time In": "08.00.00",
+   "Time Out": "17.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Christian Rugian",
+   "No Telpon": 6281337922768,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 08 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Roving",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "18.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Fullday ",
+   "Time In": "07.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Farhan",
+   "No Telpon": 628980539216,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Lia",
+   "No Telpon": 6285157027784,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Jenie",
+   "No Telpon": 6283123226300,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Ajung",
+   "No Telpon": 62895366978368,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Midnight ",
+   "Time In": "16.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Bran",
+   "No Telpon": 6285859173676,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Dicky",
+   "No Telpon": 6281236441776,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Midnight ",
+   "Time In": "16.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Seto",
+   "No Telpon": 6281558014438,
+   "Gender": "Male",
+   "Posisi": "Tentative",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "00.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 08 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "18.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "PIC Hotel",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Alda",
+   "No Telpon": 6282258852851,
+   "Gender": "Female",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad Suites",
+   "Shift": "Shift Pagi",
+   "Time In": "08.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Ferra",
+   "No Telpon": 6282325816322,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Fani",
+   "No Telpon": 6285951381818,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Lia",
+   "No Telpon": 6285157027784,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Jenie",
+   "No Telpon": 6283123226300,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Devi",
+   "No Telpon": 6281258343077,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Dayu",
+   "No Telpon": 628973941123,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Gung Ayu",
+   "No Telpon": 6287762415517,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Angelia Helen",
+   "No Telpon": 6285868020126,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Yogi Yulian",
+   "No Telpon": 6285738345666,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Seto",
+   "No Telpon": 6281558014438,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Erfa",
+   "No Telpon": 6285646566675,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Kalki",
+   "No Telpon": 6281914574190,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Christian",
+   "No Telpon": 6281510900025,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Oka Wardayu",
+   "No Telpon": 6285940870799,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Gito Samuel",
+   "No Telpon": 6281337533387,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Dwiki",
+   "No Telpon": 6281246371699,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Ajung",
+   "No Telpon": 62895366978368,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Alpen",
+   "No Telpon": 62895333052989,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Yogi Asta",
+   "No Telpon": 6282236726010,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Alda",
+   "No Telpon": 6282258852851,
+   "Gender": "Female",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Adriano",
+   "No Telpon": 6281558756124,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Renaissance",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Alda",
+   "No Telpon": 6282258852851,
+   "Gender": "Female",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Galungoka",
+   "No Telpon": 6282341262282,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Aris",
+   "No Telpon": 6281337188435,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Renaissance",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Laguna",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Nurfadilah Bahar",
+   "No Telpon": 6281310428575,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Made Ari Padmayanti",
+   "No Telpon": 6289610673364,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Yuki",
+   "No Telpon": 6282339205430,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Renaissance",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Reza",
+   "No Telpon": 6281237791166,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Renaissance",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Farhan",
+   "No Telpon": 628980539216,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Laguna",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Westin",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Medeline",
+   "No Telpon": 6281339858523,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Renaissance",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Sabrina",
+   "No Telpon": 6281529454478,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Renaissance",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Abel",
+   "No Telpon": 628119598789,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Renaissance",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Laguna",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Febro",
+   "No Telpon": 6285829054571,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Laguna",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Andika Pradana",
+   "No Telpon": 628873008109,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Westin",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Ayik",
+   "No Telpon": 6289610673364,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Gracielle Felicia Mahodim",
+   "No Telpon": 6281558874100,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Adel",
+   "No Telpon": 6281358039897,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Gekdiah",
+   "No Telpon": 628563800669,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Dicky",
+   "No Telpon": 6281236441776,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Cokya",
+   "No Telpon": 6283114129569,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift Sore",
+   "Time In": "15.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Kalki",
+   "No Telpon": 6281914574190,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "20.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Nandya",
+   "No Telpon": 6287822298274,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Anak Agung Ayu Wihita Pusparani",
+   "No Telpon": 6289685868325,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Aurel",
+   "No Telpon": 6281337268501,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Nandya",
+   "No Telpon": 6287822298274,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Christian Rugian",
+   "No Telpon": 6281337922768,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "20.00.00",
+   "Time Out": "01.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 08 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Full Day",
+   "Time In": "10.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Reza",
+   "No Telpon": 6281237791166,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Halfday ",
+   "Time In": "15.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Galungoka",
+   "No Telpon": 6282341262282,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Halfday ",
+   "Time In": "15.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Naren",
+   "No Telpon": 6281236052445,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 1 ",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Bran",
+   "No Telpon": 6285859173676,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 2",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Tiara",
+   "No Telpon": 6281246387885,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 3",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Cleine Celestine",
+   "No Telpon": 6281217977060,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 4",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Sitri setya",
+   "No Telpon": 6285750893588,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 5",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Alin",
+   "No Telpon": 6281337007388,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 6",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Grand",
+   "No Telpon": 6285813768992,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 7",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Cynthia ",
+   "No Telpon": 6281558072825,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 8",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Naren",
+   "No Telpon": 6281236052445,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 1 ",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Bran",
+   "No Telpon": 6285859173676,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 2",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Tiara",
+   "No Telpon": 6281246387885,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 3",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Cleine Celestine",
+   "No Telpon": 6281217977060,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 4",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Sitri setya",
+   "No Telpon": 6285750893588,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 5",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Alin",
+   "No Telpon": 6281337007388,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 6",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Grand",
+   "No Telpon": 6285813768992,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 7",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Cynthia ",
+   "No Telpon": 6281558072825,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 8",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Naren",
+   "No Telpon": 6281236052445,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 1 ",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Bran",
+   "No Telpon": 6285859173676,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 2",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Tiara",
+   "No Telpon": 6281246387885,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 3",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Cleine Celestine",
+   "No Telpon": 6281217977060,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 4",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Sitri setya",
+   "No Telpon": 6285750893588,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 5",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Alin",
+   "No Telpon": 6281337007388,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 6",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Grand",
+   "No Telpon": 6285813768992,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 7",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Cynthia ",
+   "No Telpon": 6281558072825,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 8",
+   "Venue": "Renaissance ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Lingga Gautama",
+   "No Telpon": 6281337894383,
+   "Gender": "Male",
+   "Posisi": "VIP & Sweeper Van ",
+   "Venue": "Conrad Suite",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Ale",
+   "No Telpon": 6285161245622,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 1 ",
+   "Venue": "Conrad ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Andreas ",
+   "No Telpon": 6282145749941,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 2",
+   "Venue": "Conrad ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Agra Putra",
+   "No Telpon": 6285174219089,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 3",
+   "Venue": "Conrad ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Rifky ",
+   "No Telpon": 6285238286696,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 4",
+   "Venue": "Conrad ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Aura Firdaraya",
+   "No Telpon": 62895363424342,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 5",
+   "Venue": "Conrad ",
+   "Shift": "Shift Sore ",
+   "Time In": "16.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Lingga Gautama",
+   "No Telpon": 6281337894383,
+   "Gender": "Male",
+   "Posisi": "VIP & Sweeper Van ",
+   "Venue": "Conrad Suite",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Ale",
+   "No Telpon": 6285161245622,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 1 ",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Andreas ",
+   "No Telpon": 6282145749941,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 2",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Agra Putra",
+   "No Telpon": 6285174219089,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 3",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Rifky ",
+   "No Telpon": 6285238286696,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 4",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Aura Firdaraya",
+   "No Telpon": 62895363424342,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 5",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Lingga Gautama",
+   "No Telpon": 6281337894383,
+   "Gender": "Male",
+   "Posisi": "VIP & Sweeper Van ",
+   "Venue": "Conrad Suite",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Ale",
+   "No Telpon": 6285161245622,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 1 ",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Andreas ",
+   "No Telpon": 6282145749941,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 2",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Agra Putra",
+   "No Telpon": 6285174219089,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 3",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Rifky ",
+   "No Telpon": 6285238286696,
+   "Gender": "Male",
+   "Posisi": "Shuttle Bus 4",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Aura Firdaraya",
+   "No Telpon": 62895363424342,
+   "Gender": "Female",
+   "Posisi": "Shuttle Bus 5",
+   "Venue": "Conrad ",
+   "Shift": "Shift Pagi Fullday ",
+   "Time In": "06.30.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Ferra",
+   "No Telpon": 6282325816322,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Alda",
+   "No Telpon": 6282258852851,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Lia",
+   "No Telpon": 6285157027784,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Yuki",
+   "No Telpon": 6282339205430,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Alda",
+   "No Telpon": 6282258852851,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Jenie",
+   "No Telpon": 6283123226300,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Alda",
+   "No Telpon": 6282258852851,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Lia",
+   "No Telpon": 6285157027784,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Nyoman Wibawa Saputra",
+   "No Telpon": 6283820078625,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Anak Agung Ayu Wihita Pusparani",
+   "No Telpon": 6289685868325,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Ferra",
+   "No Telpon": 6282325816322,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Nandya",
+   "No Telpon": 6287822298274,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Full Day",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Ferra",
+   "No Telpon": 6282325816322,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Fani",
+   "No Telpon": 6285951381818,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Devi",
+   "No Telpon": 6281258343077,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Renaissance",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Medeline",
+   "No Telpon": 6281339858523,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Renaissance",
+   "Shift": "Full Day Pagi",
+   "Time In": "07.00.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Karin",
+   "No Telpon": 6282247250405,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Kadek Agus Sukayasa",
+   "No Telpon": 62895370046542,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "I Made Bagus Sanjaya",
+   "No Telpon": 6281547218231,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Rizal",
+   "No Telpon": 6281339759007,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Lia",
+   "No Telpon": 6285157027784,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Bryan",
+   "No Telpon": 62895632227091,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Aurel",
+   "No Telpon": 6281337268501,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Dicky",
+   "No Telpon": 6281236441776,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "12 ke 13 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Midnight ",
+   "Time In": "20.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "Sabtu, 14 Maret 2026",
+   "Nama": "Yogi Yulian",
+   "No Telpon": 6285738345666,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Malam ",
+   "Time In": "00.00.00",
+   "Time Out": "08.00.00"
+ },
+ {
+   "Tanggal": "Sabtu, 14 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Malam ",
+   "Time In": "00.00.00",
+   "Time Out": "08.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Medeline",
+   "No Telpon": 6281339858523,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Reza",
+   "No Telpon": 6281237791166,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Pieter Vandy Irawan",
+   "No Telpon": 6282264605221,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Adriano Melyan",
+   "No Telpon": 6281558756124,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Nyoman Trisna Wahyu",
+   "No Telpon": 6287743359773,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Made Aris Ari Wijaya",
+   "No Telpon": 6281337188435,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Putu Andika Pradana",
+   "No Telpon": 628873008109,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Much. Furqon Fadhigarry",
+   "No Telpon": 62895320930983,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Keisha Az-Zahra Kirana",
+   "No Telpon": 6287761408920,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Annabel Putri Lewerissa",
+   "No Telpon": 628119598789,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Rizal",
+   "No Telpon": 6281339759007,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Ferra",
+   "No Telpon": 6282325816322,
+   "Gender": "Female",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Febro",
+   "No Telpon": 6285829054571,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Angelia Helen",
+   "No Telpon": 6285868020126,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Tiara",
+   "No Telpon": 6281246387885,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Made Adi Puspa Yoga",
+   "No Telpon": 6282147320972,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Herry wijaya",
+   "No Telpon": 6281339696123,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gracielle Felicia Mahodim",
+   "No Telpon": 6281558874100,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Hani",
+   "No Telpon": 6283819577180,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Grand",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "khusaeri katamsi",
+   "No Telpon": 6282146450160,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Lucas Juan Demarco Hutabarat",
+   "No Telpon": 6289605186831,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "M. Dzaki algifarisyah",
+   "No Telpon": 6285974361411,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gede Abimanyu Vija Nugraha",
+   "No Telpon": 62895637885731,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Komang Ari Sanjaya Putra",
+   "No Telpon": 6285945783401,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Surya Chandra",
+   "No Telpon": 62811388699,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Abe Sota",
+   "No Telpon": 6285857538517,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gung Ayu",
+   "No Telpon": 6287762415517,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Devi",
+   "No Telpon": 6281258343077,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Yogi Yulian",
+   "No Telpon": 6285738345666,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Ajung",
+   "No Telpon": 62895366978368,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Oka Wardayu",
+   "No Telpon": 6285940870799,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "I Gusti Ngurah Angga Sedhana",
+   "No Telpon": 6281339185356,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Farhan",
+   "No Telpon": 628980539216,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Sandrin Erika Rambu",
+   "No Telpon": 6282321659404,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Ni Komang Mita Sugiantini",
+   "No Telpon": 6281337403060,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Nyoman Wibawa Saputra",
+   "No Telpon": 6283820078625,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Ale",
+   "No Telpon": 6285161245622,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gito Samuel",
+   "No Telpon": 6281337533387,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Dwiki",
+   "No Telpon": 6281246371699,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Alpen",
+   "No Telpon": 62895333052989,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Seto",
+   "No Telpon": 6281558014438,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Jenie",
+   "No Telpon": 6283123226300,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Aurellia Dhani Nurhaliza",
+   "No Telpon": 6285738170906,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Cahya Dinata",
+   "No Telpon": 6281246875571,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Christian",
+   "No Telpon": 6281510900025,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Galungoka",
+   "No Telpon": 6282341262282,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Yamato Putra Tanaka",
+   "No Telpon": 6281911118888,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Nyoman Temaja Pramudya",
+   "No Telpon": 6285883000277,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gung Ninggrat",
+   "No Telpon": 6285738456759,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Ale",
+   "No Telpon": 6285161245622,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Rian",
+   "No Telpon": 6288219540195,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "04.00.00",
+   "Time Out": "12.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Rian",
+   "No Telpon": 6288219540195,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi",
+   "Time In": "06.00.00",
+   "Time Out": "14.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Kalki",
+   "No Telpon": 6281914574190,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 1 : Pagi",
+   "Time In": "06.00.00",
+   "Time Out": "14.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "08.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "08.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Naren",
+   "No Telpon": 6281236052445,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "08.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 15 Maret 2026",
+   "Nama": "Yogi Asta",
+   "No Telpon": 6282236726010,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 1 : Pagi ",
+   "Time In": "08.00.00",
+   "Time Out": "16.00.00"
+ },
+ {
+   "Tanggal": "Minggu, 08 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Roving",
+   "Venue": "Airport",
+   "Shift": "Shift Pagi",
+   "Time In": "10.00.00",
+   "Time Out": "18.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "13 - 14 Maret 2026",
+   "Nama": "Kalki",
+   "No Telpon": 6281914574190,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 3 : Malam ",
+   "Time In": "20.00.00",
+   "Time Out": "02.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Devi",
+   "No Telpon": 6281258343077,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "03.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Fani",
+   "No Telpon": 6285951381818,
+   "Gender": "Female",
+   "Posisi": "Airport Host Desk",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "03.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Kalki",
+   "No Telpon": 6281236441776,
+   "Gender": "Male",
+   "Posisi": "Roving ",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "03.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "03.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Airport",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "03.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Yogi Yulian",
+   "No Telpon": 6285738345666,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "Senin, 09 Maret 2026",
+   "Nama": "Christian",
+   "No Telpon": 6281510900025,
+   "Gender": "Male",
+   "Posisi": "Hotel Team",
+   "Venue": "Conrad Suites ",
+   "Shift": "Shift Sore",
+   "Time In": "22.00.00",
+   "Time Out": "04.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Full Day",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Annabel Putri Lewerissa",
+   "No Telpon": 628119598789,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Ana Maria Sabrina Endo",
+   "No Telpon": 6281529454478,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Putu Krisna Adi Anjana",
+   "No Telpon": 6287761786119,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Nurrahman Adrian",
+   "No Telpon": 6288219540195,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Kadek Pradnyana Putra",
+   "No Telpon": 6282247673445,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Herru Wijaya",
+   "No Telpon": 6281237827069,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Tatang",
+   "No Telpon": 6285172482709,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Jaka Wahyu Ramadhan",
+   "No Telpon": 6285157427322,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Rennaissance",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gusti Ayu Adelia",
+   "No Telpon": 6281358039897,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gek Diah Mahayani",
+   "No Telpon": 628563800669,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "A. Galung Astaqi",
+   "No Telpon": 6285606221723,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Kadek Dwija Santanu Putra",
+   "No Telpon": 6282145078290,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "I Nyoman Evo Kamiana",
+   "No Telpon": 628873517278,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Diva Chantika Putri",
+   "No Telpon": 6282113431966,
+   "Gender": "Female",
+   "Posisi": "Escort",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Deffa",
+   "No Telpon": 6282123012865,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Febro",
+   "No Telpon": 6285829054571,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Laguna",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Nandya",
+   "No Telpon": 6287822298274,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Fani",
+   "No Telpon": 6285951381818,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Yogi Asta",
+   "No Telpon": 6282236726010,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Bimo Satria Wicaksono",
+   "No Telpon": 6281703459691,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Naren",
+   "No Telpon": 6281236052445,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Bran",
+   "No Telpon": 6285859173676,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Seto",
+   "No Telpon": 6281558014438,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "ANANDA PRASETYO",
+   "No Telpon": 6281238141036,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Yogi Yulian",
+   "No Telpon": 6285738345666,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Christian Rugian",
+   "No Telpon": 6281337922768,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Made Ari Padmayanti",
+   "No Telpon": 6289610673364,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Nurfadilah Bahar",
+   "No Telpon": 6281310428575,
+   "Gender": "Female",
+   "Posisi": "Hospitality Desk",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Salvano Rizal Dzaky",
+   "No Telpon": 628970294592,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Andi Permana Putra",
+   "No Telpon": 6285737803515,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Fahri fahlavi",
+   "No Telpon": 62881038392391,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Agung ngurah",
+   "No Telpon": 6285857861722,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Nyoman",
+   "No Telpon": 6283820078625,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Kalki",
+   "No Telpon": 6281914574190,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gilbert Tarigan",
+   "No Telpon": 6289507929687,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Rafael Christian Go",
+   "No Telpon": 6289638961128,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Fikar",
+   "No Telpon": 6285693835823,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Jumat, 13 Maret 2026",
+   "Nama": "Gayatra",
+   "No Telpon": 6289531657638,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Conrad",
+   "Shift": "Shift 2 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Sabtu, 14 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Sabtu, 14 Maret 2026",
+   "Nama": "Ale",
+   "No Telpon": 6285161245622,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Shift 1 : Siang ",
+   "Time In": "12.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Dipa",
+   "No Telpon": 6285738674116,
+   "Gender": "Male",
+   "Posisi": "Escort",
+   "Venue": "Westin",
+   "Shift": "Full Day",
+   "Time In": "15.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Juna",
+   "No Telpon": 6289509287918,
+   "Gender": "Male",
+   "Posisi": "Transport",
+   "Venue": "Westin",
+   "Shift": "Full Day",
+   "Time In": "15.00.00",
+   "Time Out": "23.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Hari Candana",
+   "No Telpon": 6282145896718,
+   "Gender": "Male",
+   "Posisi": "TBC",
+   "Venue": "BICC",
+   "Shift": "FULL DAY",
+   "Time In": "",
+   "Time Out": ""
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Rizal",
+   "No Telpon": 6281339759007,
+   "Gender": "Male",
+   "Posisi": "TBC",
+   "Venue": "BICC",
+   "Shift": "FULL DAY",
+   "Time In": "",
+   "Time Out": ""
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Bryan",
+   "No Telpon": 62895632227091,
+   "Gender": "Male",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "16.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "Wahyu Hidayat ",
+   "No Telpon": 6285161233974,
+   "Gender": "Male",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "16.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "16.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Selasa, 10 Maret 2026",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "16.00.00",
+   "Time Out": "20.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Bryan",
+   "No Telpon": 62895632227091,
+   "Gender": "Male",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Wahyu Hidayat ",
+   "No Telpon": 6285161233974,
+   "Gender": "Male",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Bryan",
+   "No Telpon": 62895632227091,
+   "Gender": "Male",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Wahyu Hidayat ",
+   "No Telpon": 6285161233974,
+   "Gender": "Male",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "Live Signage",
+   "Venue": "TBC",
+   "Shift": "HALFDAY",
+   "Time In": "07.00.00",
+   "Time Out": "09.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Ajung",
+   "No Telpon": 62895366978368,
+   "Gender": "Male",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Hari Candana",
+   "No Telpon": 6282145896718,
+   "Gender": "Male",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Farhan",
+   "No Telpon": 628980539216,
+   "Gender": "Male",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Rabu, 11 Maret 2026",
+   "Nama": "Gung Ayu",
+   "No Telpon": 6287762415517,
+   "Gender": "Female",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Ajung",
+   "No Telpon": 62895366978368,
+   "Gender": "Male",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Hari Candana",
+   "No Telpon": 6282145896718,
+   "Gender": "Male",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Farhan",
+   "No Telpon": 628980539216,
+   "Gender": "Male",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "Kamis, 12 Maret 2026",
+   "Nama": "Gung Ayu",
+   "No Telpon": 6287762415517,
+   "Gender": "Female",
+   "Posisi": "SI Desk Team",
+   "Venue": "Westin",
+   "Shift": "Shift Pagi",
+   "Time In": "07.30.00",
+   "Time Out": "19.00.00"
+ },
+ {
+   "Tanggal": "",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "",
+   "Venue": "",
+   "Shift": "",
+   "Time In": "",
+   "Time Out": ""
+ },
+ {
+   "Tanggal": "",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "",
+   "Venue": "",
+   "Shift": "",
+   "Time In": "",
+   "Time Out": ""
+ },
+ {
+   "Tanggal": "",
+   "Nama": "",
+   "No Telpon": null,
+   "Gender": "",
+   "Posisi": "",
+   "Venue": "",
+   "Shift": "Clear Total 287",
+   "Time In": "",
+   "Time Out": ""
+ }
+]
+        // ============================================
+
+        const searchInput = document.getElementById('searchInput');
+        const content = document.getElementById('content');
+
+        // Konversi bulan Indonesia ke number
+        const monthMap = {
+            'januari': 0, 'februari': 1, 'maret': 2, 'april': 3, 'mei': 4, 'juni': 5,
+            'juli': 6, 'agustus': 7, 'september': 8, 'oktober': 9, 'november': 10, 'desember': 11
+        };
+
+        // Parse tanggal dari string
+        function parseTanggal(str) {
+            const match = str.toLowerCase().match(/(\d+)\s+(\w+)\s+(\d+)/);
+            if (match) {
+                const day = parseInt(match[1]);
+                const month = monthMap[match[2]];
+                const year = parseInt(match[3]);
+                return new Date(year, month, day);
+            }
+            return new Date(0);
+        }
+
+        // Normalisasi dan URUTKAN data
+        const normalizedData = jadwalData.map(item => ({
+            tanggal: item.Tanggal,
+            nama: item.Nama,
+            noTelp: item['No Telpon']?.toString() || '',
+            gender: item.Gender,
+            posisi: item.Posisi,
+            venue: item.Venue,
+            shift: item.Shift,
+            timeIn: formatTime(item['Time In']),
+            timeOut: formatTime(item['Time Out']),
+            dateObj: parseTanggal(item.Tanggal)
+        })).sort((a, b) => a.dateObj - b.dateObj);
+
+        function formatTime(time) {
+            if (!time && time !== 0) return '--:--';
+            const num = parseInt(time);
+            return num.toString().padStart(2, '0') + '.00';
+        }
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim().toLowerCase();
+            
+            if (!query) {
+                showWelcome();
+                return;
+            }
+
+            const results = normalizedData.filter(item => 
+                item.nama.toLowerCase().includes(query)
+            );
+
+            if (results.length === 0) {
+                showNoResult();
+                return;
+            }
+
+            renderSchedule(results);
+        });
+
+        function showWelcome() {
+            content.innerHTML = `
+                <div class="welcome">
+                    <div class="welcome-icon">👋</div>
+                    <h2>Selamat Datang</h2>
+                    <p>Masukkan nama Anda untuk melihat jadwal kerja</p>
+                </div>
+            `;
+        }
+
+        function showNoResult() {
+            content.innerHTML = `
+                <div class="no-result">
+                    <div style="font-size: 64px; margin-bottom: 20px;">😕</div>
+                    <h3>Nama Tidak Ditemukan</h3>
+                    <p>Periksa ejaan atau hubungi admin</p>
+                </div>
+            `;
+        }
+
+        function renderSchedule(results) {
+            const grouped = {};
+            results.forEach(item => {
+                if (!grouped[item.nama]) grouped[item.nama] = [];
+                grouped[item.nama].push(item);
+            });
+
+            let html = '';
+            for (const [nama, items] of Object.entries(grouped)) {
+                const first = items[0];
+                
+                // Hitung unique venue
+                const uniqueVenues = [];
+                items.forEach(item => {
+                    if (!uniqueVenues.includes(item.venue)) {
+                        uniqueVenues.push(item.venue);
+                    }
+                });
+                const venueCount = uniqueVenues.length;
+                
+                // REVISI: Header hanya Nama dan Gender
+                html += `
+                    <div class="schedule-card">
+                        <div class="employee-header">
+                            <div class="avatar">${getInitials(nama)}</div>
+                            <div class="employee-info">
+                                <h2>${nama}</h2>
+                                <div class="employee-meta">
+                                    <span class="meta-item">👤 ${first.gender}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Lokasi</th>
+                                    <th>Posisi</th>
+                                    <th>Shift</th>
+                                    <th>Jam Masuk</th>
+                                    <th>Jam Keluar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${items.map(item => {
+                                    const isToday = isDateToday(item.dateObj);
+                                    return `
+                                        <tr class="${isToday ? 'today-row' : ''}">
+                                            <td class="date-cell">${item.tanggal}</td>
+                                            <td>${item.venue}</td>
+                                            <td>${item.posisi}</td>
+                                            <td><span class="shift-badge ${getShiftClass(item.shift)}">${item.shift}</span></td>
+                                            <td>${item.timeIn}</td>
+                                            <td>${item.timeOut}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+
+                        <div class="stats-bar">
+                            <div class="stat-box">
+                                <div class="stat-value">${items.length}</div>
+                                <div class="stat-label">Total Shift</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value">${venueCount}</div>
+                                <div class="stat-label">Lokasi Kerja</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value" style="font-size: 16px; margin-top: 10px;">${first.noTelp}</div>
+                                <div class="stat-label">Kontak</div>
+                            </div>
+                        </div>
+
+                        <button class="export-btn" onclick="exportToExcel('${nama}')">
+                            📥 Download Jadwal Saya
+                        </button>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        }
+
+        function getShiftClass(shift) {
+            const s = shift.toLowerCase();
+            if (s.includes('pagi')) return 'shift-pagi';
+            if (s.includes('siang')) return 'shift-siang';
+            if (s.includes('sore')) return 'shift-sore';
+            if (s.includes('malam')) return 'shift-malam';
+            if (s.includes('full')) return 'shift-fullday';
+            if (s.includes('midnight')) return 'shift-midnight';
+            return 'shift-pagi';
+        }
+
+        function isDateToday(date) {
+            const today = new Date();
+            return date.toDateString() === today.toDateString();
+        }
+
+        function exportToExcel(nama) {
+            const data = normalizedData.filter(item => item.nama === nama);
+            
+            const excelData = [
+                ['JADWAL KERJA'],
+                [''],
+                ['Nama:', nama],
+                ['Gender:', data[0].gender],
+                ['No. HP:', data[0].noTelp],
+                [''],
+                ['Tanggal', 'Lokasi', 'Posisi', 'Shift', 'Jam Masuk', 'Jam Keluar']
+            ];
+
+            data.forEach(item => {
+                excelData.push([
+                    item.tanggal,
+                    item.venue,
+                    item.posisi,
+                    item.shift,
+                    item.timeIn,
+                    item.timeOut
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(excelData);
+            ws['!cols'] = [{wch: 25}, {wch: 15}, {wch: 20}, {wch: 15}, {wch: 12}, {wch: 12}];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Jadwal");
+            XLSX.writeFile(wb, `Jadwal_${nama.replace(/\s+/g, '_')}.xlsx`);
+        }
+    </script>
+</body>
+</html>
